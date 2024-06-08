@@ -1,0 +1,57 @@
+# manualのダウンロード方法
+MANUAL_DOWNLOAD_INSTRUCTIONS = " The destination of the manual :  /home/<user-name>/database/sndl_size_discrim/downloads/manual/"
+
+
+
+return tfds.core.DatasetInfo(
+    builder = self,
+    # データセットの説明
+    description = "Custom dataset with 'large' and 'small' labels.",
+    features=tfds.features.FeaturesDict({
+    # These are the features of your dataset like images, labels # 画像の形状，ラベルの種類を指定．
+    'image': tfds.features.Image(shape=(224, 224, 3)),
+    'label': tfds.features.ClassLabel(names=['large', 'small']),
+    }),
+    # If there's a common (input, target) tuple from the
+    # features, specify them here. They'll be used if
+    # as_supervised=True in builder.as_dataset
+
+    # データの対応関係を定義
+    supervised_keys=('image', 'label'), # Set to `None` to disable
+)
+
+
+
+# データセットの保存場所．
+# 訓練データ用のラベルファイルの絶対パス
+train_label_path = dl_manager.manual_dir / 'train_label.csv'
+# テストデータ用のラベルファイルの絶対パス
+test_label_path = dl_manager.manual_dir / 'test_label.csv'
+# TODO(sndl_size_discrim): Returns the Dict[split names, Iterator[Key, Example]]
+return [
+    # trainデータの分割方法を記述
+    tfds.core.SplitGenerator(
+    name=tfds.Split.TRAIN,
+    # gen_kwargsのkey名は，_generate_examples()に渡す引数名と同じにする．
+    gen_kwargs={'label_path': train_label_path},
+    ),
+    # testデータの分割方法を記述
+    tfds.core.SplitGenerator(
+    name=tfds.Split.TEST,
+    gen_kwargs={'label_path': test_label_path},
+    ),
+]
+
+
+
+def _generate_examples(self, label_path):
+    """Yields examples."""
+    # TODO(sndl_size_discrim): Yields (key, example) tuples from the dataset
+    with open(label_path) as f:
+      for row in csv.DictReader(f):
+        image_id = row['file_path']
+        # And yield (key, feature_dict)
+        yield image_id, {
+          'image': image_id,
+          'label': row['label'],
+        }
